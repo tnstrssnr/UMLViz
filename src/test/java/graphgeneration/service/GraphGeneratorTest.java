@@ -13,31 +13,29 @@ import java.util.List;
 class GraphGeneratorTest {
 
 	private static final String PREAMBLE =
-			"\tfontname = \"Bitstream Vera Sans\"\n"
-			+ "\tfontsize = 8\n"
+			"fontname = \"Bitstream Vera Sans\"\n"
+			+ "fontsize = 8\n"
 			+ "\n"
-			+ "\tnode [\n"
-				+ "\t\tfontname = \"Bitstream Vera Sans\"\n"
-				+ "\t\tfontsize = 8\n"
-				+ "\t\tshape = \"record\"\n"
-			+ "\t]\n"
+			+ "node [\n"
+				+ "fontname = \"Bitstream Vera Sans\"\n"
+				+ "fontsize = 8\n"
+				+ "shape = \"record\"\n"
+			+ "]\n"
 			+ "\n"
-			+ "\tedge [\n"
-			+ "\t\tfontname = \"Bitstream Vera Sans\"\n"
-			+ "\t\tfontsize = 8\n"
-			+ "\t]\n";
+			+ "edge [\n"
+			+ "fontname = \"Bitstream Vera Sans\"\n"
+			+ "fontsize = 8\n"
+			+ "]\n";
 
 
 	private GraphGenerator testedObj;
-	private GraphSettings settings;
 	private StringBuilder builder;
 	private Program program;
-	private ClazzNodeGenerator clazzNodeGenerator;
 
 	@BeforeEach void setUp() {
 		builder = new StringBuilder();
-		clazzNodeGenerator = new ClazzNodeGenerator();
-		settings = new GraphSettings("\"Bitstream Vera Sans\"", 8);
+		ClazzNodeGenerator clazzNodeGenerator = new ClazzNodeGenerator();
+		GraphSettings settings = new GraphSettings("\"Bitstream Vera Sans\"", 8);
 		testedObj = new GraphGenerator(settings, builder, clazzNodeGenerator);
 		program = new Program("g", new ArrayList<>());
 	}
@@ -55,16 +53,16 @@ class GraphGeneratorTest {
 	}
 
 	@Test void buildFontNameAndFontSize() {
-		testedObj.buildFontNameAndFontSize("\"Comic Sans\"", 8, 2);
+		testedObj.buildFontNameAndFontSize("\"Comic Sans\"", 8);
 		String res = builder.toString();
-		String expected = "\t\tfontname = \"Comic Sans\"\n\t\tfontsize = 8\n";
+		String expected = "fontname = \"Comic Sans\"\nfontsize = 8\n";
 		Assertions.assertEquals(expected, res);
 	}
 
 	@Test void buildAssignment() {
-		testedObj.buildAssignment("var", "val", 2);
+		testedObj.buildAssignment("var", "val");
 		String res = builder.toString();
-		Assertions.assertEquals("\t\tvar = val\n", res);
+		Assertions.assertEquals("var = val\n", res);
 	}
 
 	@Test void buildGraph_withClass() {
@@ -72,6 +70,10 @@ class GraphGeneratorTest {
 		Field f = new Field("age", Visibility.PRIVATE, false, false, Type.INT, null);
 		Clazz dog = new Clazz("Dog", Visibility.PUBLIC, false, false, false, List.of(f), List.of(m), null, Collections.emptyList());
 		program.getClasses().add(dog);
-		System.out.println(testedObj.buildGraph(program));
+		String res = testedObj.buildGraph(program);
+		Assertions.assertEquals("digraph g {\n" + "fontname = \"Bitstream Vera Sans\"\n" + "fontsize = 8\n" + "\n"
+				+ "node [\n" + "fontname = \"Bitstream Vera Sans\"\n" + "fontsize = 8\n" + "shape = \"record\"\n"
+				+ "]\n" + "\n" + "edge [\n" + "fontname = \"Bitstream Vera Sans\"\n" + "fontsize = 8\n" + "]\n"
+				+ "Dog [\n" + "label = \"{Dog|-age: int|+bark() : void}\"\n" + "]\n" + "}", res);
 	}
 }

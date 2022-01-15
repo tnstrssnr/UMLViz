@@ -3,8 +3,11 @@ package graphgeneration.service;
 import graphgeneration.model.GraphConstants;
 import programanalysis.model.*;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static graphgeneration.model.GraphConstants.ASSIGN;
 
 public class ClazzNodeGenerator implements ProgramPartVisitor<String> {
 
@@ -12,8 +15,12 @@ public class ClazzNodeGenerator implements ProgramPartVisitor<String> {
 		String prefix = clazz.getName() + " " + "[\n";
 		String suffix = "\n]\n";
 
-		List<String> fields = clazz.getFields().stream().map(this::visit).collect(Collectors.toList());
-		List<String> methods = clazz.getMethods().stream().map(this::visit).collect(Collectors.toList());
+		List<String> fields = clazz.getFields().stream()
+				.sorted(Comparator.comparing(Field::isStatic))
+				.map(this::visit).collect(Collectors.toList());
+		List<String> methods = clazz.getMethods().stream()
+				.sorted(Comparator.comparing(Method::isStatic))
+				.map(this::visit).collect(Collectors.toList());
 
 		String content = GraphConstants.NODE_CONTENT + " = \"{"
 				+ clazz.getName()
@@ -30,7 +37,7 @@ public class ClazzNodeGenerator implements ProgramPartVisitor<String> {
 		String prefix = interfacee.getName() + " " + "[\n";
 		String suffix = "\n]\n";
 
-		List<String> methods = interfacee.getMethods().stream().map(field -> this.visit(field)).collect(Collectors.toList());
+		List<String> methods = interfacee.getMethods().stream().map(this::visit).collect(Collectors.toList());
 
 		String content = GraphConstants.NODE_CONTENT + " = {"
 				+ "<<interface>>\\l"
@@ -46,12 +53,26 @@ public class ClazzNodeGenerator implements ProgramPartVisitor<String> {
 		List<String> parameters = method.getParameters().stream().map(this::parameterString).collect(
 				Collectors.toList());
 
-		return visibilitySymbol(method.getVisibility())
+		String methodLine =  visibilitySymbol(method.getVisibility())
 				+ method.getName()
 				+ "("
 				+ parameters.stream().reduce("", (acc, s) -> (acc.isEmpty()) ? s : acc + ", " + s)
 				+ ") : "
 				+ method.getReturnType().getName();
+
+		if (method.isStatic()) {
+			methodLine = "<u>" + methodLine + "</u>";
+		}
+
+		if (method.isAbstract()) {
+			methodLine = "<i>" + methodLine + "</i>";
+		}
+
+		if (method.isFinal()) {
+			methodLine = methodLine + " <<final>>";
+		}
+
+		return methodLine;
 	}
 
 	private String parameterString(Parameter parameter) {
@@ -59,10 +80,24 @@ public class ClazzNodeGenerator implements ProgramPartVisitor<String> {
 	}
 
 	@Override public String visitField(Field field) {
-		return visibilitySymbol(field.getVisibility())
+		String fieldLine =  visibilitySymbol(field.getVisibility())
 				+ field.getName()
 				+ ": "
 				+ field.getType().getName();
+
+		if (field.getDefaultValue() != null) {
+			fieldLine += ASSIGN + field.getDefaultValue();
+		}
+
+		if (field.isStatic()) {
+			fieldLine = "<u>" + fieldLine + "</u>";
+		}
+
+		if (field.isFinal()) {
+			fieldLine = fieldLine + " {readOnly}";
+		}
+
+		return fieldLine;
 	}
 
 	private String visibilitySymbol(Visibility modifier) {
